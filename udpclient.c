@@ -104,6 +104,7 @@ int main(int argc, char **argv) {
 			
 		gettimeofday(&end, NULL);
 		
+		// uncomment following line to see information in console
 		//printf("Sending packet %d from %s:%d, ", pck.pck_id, inet_ntoa(caddr.sin_addr), ntohs(caddr.sin_port));
 		
 		// calculating the processing time
