@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-#define BUFLEN 250
+#define BUFLEN 350
 #define NPACK 2
 #define PORT 9930
 #define MAX 255
