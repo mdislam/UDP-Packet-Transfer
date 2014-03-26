@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-#define BUFLEN 51
+#define BUFLEN 250
 #define NPACK 2
 #define PORT 9930
 #define MAX 255
@@ -32,6 +32,13 @@ int main() {
 	char line[BUFLEN];
 	struct UdpPacket *pck;
 	struct timeval end;
+	
+	int pack_count = 0;
+	int pack_id[BUFLEN];
+	long send_ts[BUFLEN];
+	long tx_time[BUFLEN];
+	long sleep_interval[BUFLEN];
+	long sleep_interval_server[BUFLEN];
 	
 	long curr_rx_ts, prev_rx_ts, pck_tx_time, sleep_t_server_cal;
 	
@@ -66,14 +73,12 @@ int main() {
 
 	printf("Server Running... ...\n");
 	
-	file = fopen("log_data.txt", "w");
+	file = fopen("data/log_data.txt", "w");
 	fprintf(file, "ID\tSlp_C\tSlp_S\tTX_Time\tSend_TS\n");
 	fclose(file);
 
 	len = sizeof(caddr);
 	curr_rx_ts = prev_rx_ts = 0;
-	
-	file = fopen("log_data.txt", "a");
 	
 	pck  = malloc(sizeof(struct UdpPacket));
 	
@@ -83,18 +88,19 @@ int main() {
 	 * The zero parameter says that no special flags should be used
 	 * Data about the sender should be stored in caddr, which has room for len byte
 	 */
-	while(recvfrom(sfd, line, sizeof(struct UdpPacket) + 10, 0, (struct sockaddr *)&caddr, &len) != -1){
+	while(pack_count < BUFLEN){
+	
+		if(recvfrom(sfd, line, sizeof(struct UdpPacket), 0, (struct sockaddr *)&caddr, &len) == -1)
+			diep("recvfrom()");
 		
-	    
-//	    if(ret == -1)
-//		diep("recvfrom()");
 		// getting the receiveing timestamp
 		gettimeofday(&end, NULL);
 		
 		curr_rx_ts = end.tv_sec * 1000000 + end.tv_usec;
 
 		
-		pck = (struct UdpPacket *)line;	
+		pck = (struct UdpPacket *)line;
+		
 		
 		// calculating the transfer time of a packet
 		pck_tx_time = ((end.tv_sec * 1000000 + end.tv_usec) - pck->send_time);
@@ -103,16 +109,36 @@ int main() {
 		else
 		  sleep_t_server_cal = curr_rx_ts - prev_rx_ts - pck_tx_time;
 		
+		// information storing in array
+		pack_id[pack_count] = pck->pck_id;
+		send_ts[pack_count] = pck->send_time;
+		tx_time[pack_count] = pck_tx_time;
+		sleep_interval[pack_count] = pck->sleep_time;
+		sleep_interval_server[pack_count] = sleep_t_server_cal;
+		
 		printf("Received packet %d from %s:%d\n", pck->pck_id, inet_ntoa(caddr.sin_addr), ntohs(caddr.sin_port));
 		//printf("Packet ID: %d, Sending TS: %ld, Transfer time: %ld, sleep time: %ld\n", pck->pck_id, pck->send_time, pck_tx_time, sleep_t_server_cal);
 		
 		prev_rx_ts = curr_rx_ts;
 		
-		
-		fprintf(file, "%d\t%ld\t%ld\t%ld\t\t%ld\n", pck->pck_id, pck->sleep_time, sleep_t_server_cal, pck_tx_time, pck->send_time);
+		pack_count++;
 	}
 	
-	free(pck);
+	int count;
+	
+	if((file = fopen("data/log_data.txt", "a")) == NULL){
+	  printf("\nUnable to open file log_data.txt");
+	  exit(1);
+	}
+    
+	//fwrite(pack_id, sizeof(pack_id), 1, file);
+    
+	for(count = 0; count < BUFLEN; count++) {
+		fprintf(file, "%d\t%ld\t%ld\t%ld\t\t%ld\n", pack_id[count], sleep_interval[count], sleep_interval_server[count], tx_time[count], send_ts[count]);
+	}
+	
+	
+	//free(pck);
 	
 	fclose(file);
 	close(sfd);
