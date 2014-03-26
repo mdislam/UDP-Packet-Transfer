@@ -35,7 +35,6 @@ int main() {
 	
 	long curr_rx_ts, prev_rx_ts, pck_tx_time, sleep_t_server_cal;
 	
-	int pack_id_arr[BUFLEN];
 	FILE *file; // file for recording packet information
 	
 	/* 
@@ -74,7 +73,6 @@ int main() {
 	len = sizeof(caddr);
 	curr_rx_ts = prev_rx_ts = 0;
 	
-	//int count = 0;
 	file = fopen("log_data.txt", "a");
 	
 	pck  = malloc(sizeof(struct UdpPacket));
@@ -107,14 +105,10 @@ int main() {
 		printf("Received packet %d from %s:%d\n", pck->pck_id, inet_ntoa(caddr.sin_addr), ntohs(caddr.sin_port));
 		//printf("Packet ID: %d, Sending TS: %ld, Transfer time: %ld, sleep time: %ld\n", pck->pck_id, pck->send_time, pck_tx_time, sleep_t_server_cal);
 		
-		//pack_id_arr[count] = pck->pck_id;
-		
 		prev_rx_ts = curr_rx_ts;
 		
 		
-		fprintf(file, "%d\t%ld\t%ld\t%ld\t\t%ld\n", pck->pck_id, pck->sleep_time, sleep_t_server_cal, pck_tx_time, pck->send_time);		
-		
-		//count++;
+		fprintf(file, "%d\t%ld\t%ld\t%ld\t\t%ld\n", pck->pck_id, pck->sleep_time, sleep_t_server_cal, pck_tx_time, pck->send_time);
 	}
 	
 	free(pck);
